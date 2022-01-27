@@ -19,25 +19,27 @@ public class MovePiece : MonoBehaviour
     {
       if (Input.GetKeyDown("d"))
       {
-        if (rotation == 90 || rotation == 270)
+        if (transform.position.x + XLength() < GameManager.instance.SIZE_HORIZONTAL)
         {
-          if (transform.position.x+ piece.verticalSize < GameManager.instance.SIZE_HORIZONTAL)
-            transform.position += new Vector3(1f, 0, 0);
-        }
-        else
-        {
-          if (transform.position.x + piece.horizontalSize < GameManager.instance.SIZE_HORIZONTAL)
-            transform.position += new Vector3(1f, 0, 0);
+          transform.position += new Vector3(1f, 0, 0);
         }
       }
 
       if (Input.GetKeyDown("a"))
       {
-          if (transform.position.x > 0)
-          {
-            transform.position += new Vector3(-1f, 0, 0);
-          }
+        if (transform.position.x > 0)
+        {
+          transform.position += new Vector3(-1f, 0, 0);
+        }
 
+      }
+      if (Input.GetKeyDown("s"))
+      {
+        RaycastHit2D hit = Physics2D.Raycast(transform.position+Vector3.down*0.5f, Vector2.down, 20f);
+        if (hit.collider != null)
+        {
+          Debug.Log(hit.collider.gameObject.transform.position.y + 0.5);
+        }
       }
       if (Input.GetKeyDown("w"))
       {
@@ -71,12 +73,48 @@ public class MovePiece : MonoBehaviour
             rotation = 0;
             break;
         }
+
+        // check if piece is overflow
+        if (transform.position.x + XLength() > GameManager.instance.SIZE_HORIZONTAL)
+        {
+          transform.position = new Vector3(GameManager.instance.SIZE_HORIZONTAL - XLength(), transform.position.y, transform.position.z);
+        }
       }
     }
+    transform.position = new Vector3(Mathf.Round(transform.position.x), transform.position.y, transform.position.z);
+  }
+  private float XLength()
+  {
+    if (rotation == 90 || rotation == 270)
+      return piece.verticalSize;
+    return piece.horizontalSize;
   }
   private void OnCollisionEnter2D(Collision2D collision)
   {
-    canMove = false;
+    if (collision.gameObject.CompareTag("Bottom"))
+    {
+      Stop();
+    }
+    if (collision.gameObject.CompareTag("Piece"))
+    {
+      if (gameObject.GetComponent<Rigidbody2D>().velocity.y > -0.01f)
+      {
+        Stop();
+      }
+    }
+  }
+
+  private void Stop()
+  {
+    if (canMove == true)
+    {
+      canMove = false;
+      transform.position = new Vector3(Mathf.Round(transform.position.x), Mathf.Round(transform.position.y), transform.position.z);
+      //gameObject.GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeAll;
+      GameManager.instance.movePieces(transform.position ,transform.GetChild(0));
+      GameManager.instance.SpawnPiece();
+      Destroy(gameObject);
+    }
   }
 }
 
